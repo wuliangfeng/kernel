@@ -14,6 +14,8 @@
 #include <linux/of.h>
 #include <linux/reboot.h>
 #include "reboot-mode.h"
+// needs REBOOT_FLAG
+#include <dt-bindings/soc/rockchip,boot-mode.h>
 
 #define PREFIX "mode-"
 
@@ -39,6 +41,13 @@ static int get_reboot_mode_magic(struct reboot_mode_driver *reboot,
 	if (!cmd || !cmd[0])
 		cmd = normal;
 
+  if (!strncmp(cmd, "bootos", 6)) {
+    unsigned long idx = simple_strtoul(cmd+6, 0, 10);
+    idx += 100;
+    if (idx > 255)
+      idx = 255;
+    magic = REBOOT_FLAG + (int)(idx & 0xff);
+  } else
 	list_for_each_entry(info, &reboot->head, list) {
 		if (!strcmp(info->mode, cmd)) {
 			magic = info->magic;
