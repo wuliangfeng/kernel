@@ -279,6 +279,7 @@ static void rkpart_bootmode_fixup(void)
 {
 	const char mode_emmc[] = " androidboot.mode=emmc";
 	const char mode_nvme[] = " androidboot.mode=nvme";
+	const char mode_sd[] = " androidboot.mode=sd";
 	const char charger[] = " androidboot.charger.emmc=1";
 	char *new_command_line;
 	size_t saved_command_line_len = strlen(saved_command_line);
@@ -294,6 +295,9 @@ static void rkpart_bootmode_fixup(void)
 		if (strstr(saved_command_line, "storagemedia=nvme"))
 			sprintf(new_command_line, "%s%s",
 				saved_command_line, mode_nvme);
+    else if (strstr(saved_command_line, "storagemedia=sd"))
+			sprintf(new_command_line, "%s%s",
+              saved_command_line, mode_sd);
 		else
 			sprintf(new_command_line, "%s%s",
 				saved_command_line, mode_emmc);
