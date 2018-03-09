@@ -198,6 +198,7 @@
 		};
 
 		ir {
+			status = "disabled";
 			/* gpios = <&gpio2 GPIO_C2 GPIO_ACTIVE_HIGH>; */
 			linux,default-trigger = "ir";
 			default-state = "off";
