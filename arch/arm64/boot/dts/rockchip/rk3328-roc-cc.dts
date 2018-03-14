@@ -46,8 +46,8 @@
 #include "rk3328-box-plus-dram-timing.dtsi"
 
 / {
-	model = "Firefly RK3328 Mini Board";
-	compatible = "firefly,rk3328-mini", "rockchip,rk3328";
+	model = "Firefly ROC-RK3328-CC";
+	compatible = "firefly,roc-rk3328-cc", "rockchip,rk3328";
 
 	chosen {
 		bootargs = "rockchip_jtag earlyprintk=uart8250-32bit,0xff130000";
