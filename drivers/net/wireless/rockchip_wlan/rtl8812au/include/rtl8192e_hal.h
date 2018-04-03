@@ -22,7 +22,11 @@
 
 //#include "hal_com.h"
 
+#if 1
 #include "hal_data.h"
+#else
+#include "../hal/OUTSRC/odm_precomp.h"
+#endif
 
 //include HAL Related header after HAL Related compiling flags 
 #include "rtl8192e_spec.h"
@@ -45,18 +49,17 @@
 //---------------------------------------------------------------------
 //		RTL8192E From header
 //---------------------------------------------------------------------
-	#define RTL8192E_FW_IMG					"rtl8192e/FW_NIC.bin"
-	#define RTL8192E_FW_WW_IMG				"rtl8192e/FW_WoWLAN.bin"
-	#define RTL8192E_PHY_REG					"rtl8192e/PHY_REG.txt" 
-	#define RTL8192E_PHY_RADIO_A				"rtl8192e/RadioA.txt"
-	#define RTL8192E_PHY_RADIO_B				"rtl8192e/RadioB.txt"
-	#define RTL8192E_TXPWR_TRACK				"rtl8192e/TxPowerTrack.txt"
-	#define RTL8192E_AGC_TAB					"rtl8192e/AGC_TAB.txt"
-	#define RTL8192E_PHY_MACREG 				"rtl8192e/MAC_REG.txt"
-	#define RTL8192E_PHY_REG_PG				"rtl8192e/PHY_REG_PG.txt"
-	#define RTL8192E_PHY_REG_MP 				"rtl8192e/PHY_REG_MP.txt" 
-	#define RTL8192E_TXPWR_LMT					"rtl8192e/TXPWR_LMT.txt"
-	#define RTL8192E_WIFI_ANT_ISOLATION		"rtl8192e/wifi_ant_isolation.txt"
+		#define RTL8192E_FW_IMG					"rtl192E\\rtl8192Efw.bin"
+		#define RTL8192E_FW_WW_IMG				"rtl192E\\rtl8192Efwww.bin"
+		#define RTL8192E_PHY_REG					"rtl192E\\PHY_REG.txt" 
+		#define RTL8192E_PHY_RADIO_A				"rtl192E\\RadioA.txt"
+		#define RTL8192E_PHY_RADIO_B				"rtl192E\\RadioB.txt"
+		#define RTL8192E_TXPWR_TRACK				"rtl192E\\TxPowerTrack.txt"			
+		#define RTL8192E_AGC_TAB					"rtl192E\\AGC_TAB.txt"
+		#define RTL8192E_PHY_MACREG 				"rtl192E\\MAC_REG.txt"
+		#define RTL8192E_PHY_REG_PG				"rtl192E\\PHY_REG_PG.txt"
+		#define RTL8192E_PHY_REG_MP 				"rtl192E\\PHY_REG_MP.txt" 
+		#define RTL8192E_TXPWR_LMT					"rtl192E\\TXPWR_LMT.txt" 
 
 //---------------------------------------------------------------------
 //		RTL8192E Power Configuration CMDs for PCIe interface
@@ -90,6 +93,11 @@ typedef struct _RT_FIRMWARE_8192E {
 	u8			szFwBuffer[FW_SIZE_8192E];
 #endif
 	u32			ulFwLength;
+
+#ifdef CONFIG_WOWLAN
+	u8*			szWoWLANFwBuffer;
+	u32			ulWoWLANFwLength;
+#endif //CONFIG_WOWLAN
 } RT_FIRMWARE_8192E, *PRT_FIRMWARE_8192E;
 
 //
@@ -132,54 +140,40 @@ typedef struct _RT_FIRMWARE_8192E {
 #define MAX_RX_DMA_BUFFER_SIZE_8192E		0x3d00 //0x3E80   //0x3FFF	// RX 16K reserved for WOW ?
 
 
-//For General Reserved Page Number(Beacon Queue is reserved page)
-//Beacon:2, PS-Poll:1, Null Data:1,Qos Null Data:1,BT Qos Null Data:1
-#define RSVD_PAGE_NUM_8192E		0x08
-//For WoWLan , more reserved page
-//ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:2,GTK EXT MEM:2, PNO: 6
-#ifdef CONFIG_WOWLAN
-#define WOWLAN_PAGE_NUM_8192E	0x07
-#else
-#define WOWLAN_PAGE_NUM_8192E	0x00
-#endif
+#define TX_TOTAL_PAGE_NUMBER_8192E		243 //0x00~0xF3 totoal pages: F4
 
-#ifdef CONFIG_PNO_SUPPORT
-#undef WOWLAN_PAGE_NUM_8192E
-#define WOWLAN_PAGE_NUM_8192E	0x0d
-#endif
-
-#define	TOTAL_RSVD_PAGE_NUMBER_8192E 	(RSVD_PAGE_NUM_8192E+WOWLAN_PAGE_NUM_8192E)
-#define	TX_TOTAL_PAGE_NUMBER_8192E	(0x100 - TOTAL_RSVD_PAGE_NUMBER_8192E)
-
-#define	TX_PAGE_BOUNDARY_8192E	TX_TOTAL_PAGE_NUMBER_8192E
-
-
+#define TX_PAGE_BOUNDARY_8192E			(TX_TOTAL_PAGE_NUMBER_8192E + 1)//0xF4,Rserved 12 pages for BCN/PS-POLL..
 #define TX_PAGE_LOAD_FW_BOUNDARY_8192E		0x47 //0xA5
 #define TX_PAGE_BOUNDARY_WOWLAN_8192E		0xE0
 
 // For Normal Chip Setting
 // (HPQ + LPQ + NPQ + PUBQ) shall be TX_TOTAL_PAGE_NUMBER_92C
-
-#define NORMAL_PAGE_NUM_HPQ_8192E			0x10
-#define NORMAL_PAGE_NUM_LPQ_8192E			0x10
-#define NORMAL_PAGE_NUM_NPQ_8192E			0x10
+#define NORMAL_PAGE_NUM_PUBQ_8192E			0xE0
+#define NORMAL_PAGE_NUM_LPQ_8192E			0x00
+#define NORMAL_PAGE_NUM_HPQ_8192E			0x08
+#define NORMAL_PAGE_NUM_NPQ_8192E			0x0C
 #define NORMAL_PAGE_NUM_EPQ_8192E			0x00
 
 
+
 //Note: For WMM Normal Chip Setting ,modify later
+#define WMM_NORMAL_TX_TOTAL_PAGE_NUMBER_8192E	TX_PAGE_BOUNDARY_8192E
+#define WMM_NORMAL_TX_PAGE_BOUNDARY_8192E		(WMM_NORMAL_TX_TOTAL_PAGE_NUMBER_8192E + 1)
+
+#define WMM_NORMAL_PAGE_NUM_PUBQ_8192E	NORMAL_PAGE_NUM_PUBQ_8192E
 #define WMM_NORMAL_PAGE_NUM_HPQ_8192E		NORMAL_PAGE_NUM_HPQ_8192E
 #define WMM_NORMAL_PAGE_NUM_LPQ_8192E		NORMAL_PAGE_NUM_LPQ_8192E
 #define WMM_NORMAL_PAGE_NUM_NPQ_8192E		NORMAL_PAGE_NUM_NPQ_8192E
+
+#define USB_JAGUAR_DUMMY_OFFSET_8192EU		2
+#define USB_JAGUAR_DUMMY_UNIT_8192EU			8
+#define USB_JAGUAR_ALL_DUMMY_LENGTH_8192EU			(USB_JAGUAR_DUMMY_OFFSET_8192EU * USB_JAGUAR_DUMMY_UNIT_8192EU)
+#define USB_HWDESC_HEADER_LEN_8192EU		(TX_DESC_SIZE_8192E + USB_JAGUAR_ALL_DUMMY_LENGTH_8192EU)
 
 
 //-------------------------------------------------------------------------
 //	Chip specific
 //-------------------------------------------------------------------------
-
-// pic buffer descriptor
-#define RTL8192EE_SEG_NUM			TX_BUFFER_SEG_NUM
-#define TX_DESC_NUM_92E			128
-#define RX_DESC_NUM_92E			128
 
 //-------------------------------------------------------------------------
 //	Channel Plan
@@ -217,12 +211,16 @@ typedef struct _RT_FIRMWARE_8192E {
 #define 	EFUSE_MAX_BANK_8192E					3
 //===========================================================
 
+#define GET_RF_TYPE(priv)			(GET_HAL_DATA(priv)->rf_type)
+
 #define INCLUDE_MULTI_FUNC_BT(_Adapter)	(GET_HAL_DATA(_Adapter)->MultiFunc & RT_MULTI_FUNC_BT)
 #define INCLUDE_MULTI_FUNC_GPS(_Adapter)	(GET_HAL_DATA(_Adapter)->MultiFunc & RT_MULTI_FUNC_GPS)
 
 //#define IS_MULTI_FUNC_CHIP(_Adapter)	(((((PHAL_DATA_TYPE)(_Adapter->HalData))->MultiFunc) & (RT_MULTI_FUNC_BT|RT_MULTI_FUNC_GPS)) ? _TRUE : _FALSE)
 
 //#define RT_IS_FUNC_DISABLED(__pAdapter, __FuncBits) ( (__pAdapter)->DisabledFunctions & (__FuncBits) )
+
+#define GetDefaultAdapter(padapter)	padapter
 
 // rtl8812_hal_init.c
 void	_8051Reset8192E(PADAPTER padapter);
@@ -236,7 +234,6 @@ u8	GetEEPROMSize8192E(PADAPTER padapter);
 void	hal_InitPGData_8192E(PADAPTER padapter, u8* PROMContent);
 void	Hal_EfuseParseIDCode8192E(PADAPTER padapter, u8 *hwinfo);
 void	Hal_ReadPROMVersion8192E(PADAPTER padapter, u8 *hwinfo, BOOLEAN AutoLoadFail);
-void	Hal_ReadPowerSavingMode8192E(PADAPTER padapter, u8*	hwinfo, BOOLEAN	AutoLoadFail);
 void	Hal_ReadTxPowerInfo8192E(PADAPTER padapter,u8* hwinfo,BOOLEAN	AutoLoadFail);
 void	Hal_ReadBoardType8192E(PADAPTER pAdapter,u8* hwinfo,BOOLEAN AutoLoadFail);
 void	Hal_ReadThermalMeter_8192E(PADAPTER	Adapter,u8* PROMContent,BOOLEAN 	AutoloadFail);
@@ -298,18 +295,8 @@ void rtl8192e_init_default_value(_adapter * padapter);
 // register
 void SetBcnCtrlReg(PADAPTER padapter, u8 SetBits, u8 ClearBits);
 
+void rtl8192e_clone_haldata(_adapter *dst_adapter, _adapter *src_adapter);
 void rtl8192e_start_thread(_adapter *padapter);
 void rtl8192e_stop_thread(_adapter *padapter);
-
-#ifdef CONFIG_PCI_HCI
-BOOLEAN	InterruptRecognized8192EE(PADAPTER Adapter);
-u16	get_txdesc_buf_addr(u16 ff_hwaddr);
-#endif
-
-
-#ifdef CONFIG_BT_COEXIST
-void rtl8192e_combo_card_WifiOnlyHwInit(PADAPTER Adapter);
-#endif
-
 #endif //__RTL8192E_HAL_H__
 

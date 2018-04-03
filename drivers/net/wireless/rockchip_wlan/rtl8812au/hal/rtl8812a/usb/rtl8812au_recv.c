@@ -22,6 +22,24 @@
 //#include <drv_types.h>
 #include <rtl8812a_hal.h>
 
+
+void rtl8812au_init_recvbuf(_adapter *padapter, struct recv_buf *precvbuf)
+{
+
+	precvbuf->transfer_len = 0;
+
+	precvbuf->len = 0;
+
+	precvbuf->ref_cnt = 0;
+
+	if(precvbuf->pbuf)
+	{
+		precvbuf->pdata = precvbuf->phead = precvbuf->ptail = precvbuf->pbuf;
+		precvbuf->pend = precvbuf->pdata + MAX_RECVBUF_SZ;
+	}
+
+}
+
 int	rtl8812au_init_recv_priv(_adapter *padapter)
 {
 	struct recv_priv	*precvpriv = &padapter->recvpriv;
@@ -35,7 +53,7 @@ int	rtl8812au_init_recv_priv(_adapter *padapter)
 
 #ifdef PLATFORM_LINUX
 	tasklet_init(&precvpriv->recv_tasklet,
-	     (void(*)(unsigned long))usb_recv_tasklet,
+	     (void(*)(unsigned long))rtl8812au_recv_tasklet,
 	     (unsigned long)padapter);
 #endif
 
@@ -59,7 +77,9 @@ int	rtl8812au_init_recv_priv(_adapter *padapter)
 	//init recv_buf
 	_rtw_init_queue(&precvpriv->free_recv_buf_queue);
 
+#ifdef CONFIG_USE_USB_BUFFER_ALLOC_RX
 	_rtw_init_queue(&precvpriv->recv_buf_pending_queue);
+#endif	// CONFIG_USE_USB_BUFFER_ALLOC_RX
 
 	precvpriv->pallocated_recv_buf = rtw_zmalloc(NR_RECVBUFF *sizeof(struct recv_buf) + 4);
 	if(precvpriv->pallocated_recv_buf==NULL){
@@ -116,21 +136,19 @@ int	rtl8812au_init_recv_priv(_adapter *padapter)
 		for(i=0; i<NR_PREALLOC_RECV_SKB; i++)
 		{
 
-#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
-			pskb = rtw_alloc_skb_premem();
-#else
-			pskb = rtw_skb_alloc(MAX_RECVBUF_SZ + RECVBUFF_ALIGN_SZ);
-#endif //CONFIG_PREALLOC_RX_SKB_BUFFER
+	#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,18)) // http://www.mail-archive.com/netdev@vger.kernel.org/msg17214.html
+			pskb = __dev_alloc_skb(MAX_RECVBUF_SZ + RECVBUFF_ALIGN_SZ, GFP_KERNEL);
+	#else
+			pskb = __netdev_alloc_skb(padapter->pnetdev, MAX_RECVBUF_SZ + RECVBUFF_ALIGN_SZ, GFP_KERNEL);
+	#endif
 
 			if(pskb)
 			{
 				pskb->dev = padapter->pnetdev;
-				
-#ifndef CONFIG_PREALLOC_RX_SKB_BUFFER
+
 				tmpaddr = (SIZE_PTR)pskb->data;
 				alignment = tmpaddr & (RECVBUFF_ALIGN_SZ-1);
 				skb_reserve(pskb, (RECVBUFF_ALIGN_SZ - alignment));
-#endif //!
 
 				skb_queue_tail(&precvpriv->free_recv_skb_queue, pskb);
 			}
@@ -184,7 +202,7 @@ void rtl8812au_free_recv_priv (_adapter *padapter)
 		DBG_8192C(KERN_WARNING "rx_skb_queue not empty\n");
 	}
 
-	rtw_skb_queue_purge(&precvpriv->rx_skb_queue);
+	skb_queue_purge(&precvpriv->rx_skb_queue);
 
 #ifdef CONFIG_PREALLOC_RECV_SKB
 
@@ -192,24 +210,7 @@ void rtl8812au_free_recv_priv (_adapter *padapter)
 		DBG_8192C(KERN_WARNING "free_recv_skb_queue not empty, %d\n", skb_queue_len(&precvpriv->free_recv_skb_queue));
 	}
 
-#ifdef CONFIG_PREALLOC_RX_SKB_BUFFER
-	{
-		int i=0;
-		struct sk_buff *skb;
-
-		while ((skb = skb_dequeue(&precvpriv->free_recv_skb_queue)) != NULL)
-		{
-			if(i<NR_PREALLOC_RECV_SKB)
-				rtw_free_skb_premem(skb);
-			else				
-				_rtw_skb_free(skb);
-
-			i++;
-		}	
-	}	
-#else 
-	rtw_skb_queue_purge(&precvpriv->free_recv_skb_queue);
-#endif //CONFIG_PREALLOC_RX_SKB_BUFFER
+	skb_queue_purge(&precvpriv->free_recv_skb_queue);
 
 #endif
 

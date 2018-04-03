@@ -21,7 +21,7 @@
 
 #include <drv_types.h>
 #include <rtw_mp_ioctl.h>
-#include "../hal/OUTSRC/phydm_precomp.h"
+#include "../hal/OUTSRC/odm_precomp.h"
 
 //****************  oid_rtl_seg_81_85   section start ****************
 NDIS_STATUS oid_rt_wireless_mode_hdl(struct oid_par_priv *poid_par_priv)
@@ -1672,12 +1672,12 @@ _func_enter_;
 		return NDIS_STATUS_INVALID_LENGTH;
 
 	*poid_par_priv->bytes_rw = 8;
-	_rtw_memcpy(poid_par_priv->information_buf, &(adapter_to_pwrctl(Adapter)->pwr_mode), 8);
+	_rtw_memcpy(poid_par_priv->information_buf, &(Adapter->pwrctrlpriv.pwr_mode), 8);
 	*poid_par_priv->bytes_rw = poid_par_priv->information_buf_len;
 
 	RT_TRACE(_module_mp_, _drv_notice_,
 		 ("-oid_rt_pro_qry_pwrstate_hdl: pwr_mode=%d smart_ps=%d\n",
-		  adapter_to_pwrctl(Adapter)->pwr_mode, adapter_to_pwrctl(Adapter)->smart_ps));
+		  Adapter->pwrctrlpriv.pwr_mode, Adapter->pwrctrlpriv.smart_ps));
 
 _func_exit_;
 
@@ -1990,9 +1990,9 @@ NDIS_STATUS oid_rt_pro_dele_sta_info_hdl(struct oid_par_priv *poid_par_priv)
 
 	psta = rtw_get_stainfo(&Adapter->stapriv, macaddr);
 	if (psta != NULL) {
-		//_enter_critical(&(Adapter->stapriv.sta_hash_lock), &irqL);
+		_enter_critical(&(Adapter->stapriv.sta_hash_lock), &irqL);
 		rtw_free_stainfo(Adapter, psta);
-		//_exit_critical(&(Adapter->stapriv.sta_hash_lock), &irqL);
+		_exit_critical(&(Adapter->stapriv.sta_hash_lock), &irqL);
 	}
 
 	return status;

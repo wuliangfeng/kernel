@@ -20,6 +20,7 @@
 #ifndef _RTW_MP_H_
 #define _RTW_MP_H_
 
+
 #if 0
 #define MPT_NOOP			0
 #define MPT_READ_MAC_1BYTE		1
@@ -127,9 +128,8 @@ struct mp_tx
 	u32 count, sended;
 	u8 payload;
 	struct pkt_attrib attrib;
-	//struct tx_desc desc;
-	//u8 resvdtx[7];
-	u8 desc[TXDESC_SIZE];
+	struct tx_desc desc;
+	u8 resvdtx[7];
 	u8 *pallocated_buf;
 	u8 *buf;
 	u32 buf_size, write_size;
@@ -269,11 +269,8 @@ typedef struct _MPT_CONTEXT
 	u8 		backup0x52_RF_A;
 	u8 		backup0x52_RF_B;
 	
-	u4Byte			backup0x58_RF_A;	
-	u4Byte			backup0x58_RF_B;
-	
 	u1Byte			h2cReqNum;
-	u1Byte			c2hBuf[32];
+	u1Byte			c2hBuf[20];
 
     u1Byte          btInBuf[100];
 	ULONG			mptOutLen;
@@ -345,14 +342,6 @@ enum {
 	MP_QueryDrvStats,
 	MP_SetBT,
 	CTA_TEST,
-	MP_DISABLE_BT_COEXIST,
-	MP_PwrCtlDM,
-#ifdef CONFIG_WOWLAN
-	MP_WOW_ENABLE,
-#endif
-#ifdef CONFIG_AP_WOWLAN
-	MP_AP_WOW_ENABLE,
-#endif
 	MP_NULL,
 	MP_GET_TXPOWER_INX,
 };
@@ -373,16 +362,13 @@ struct mp_priv
 	//Tx Section
 	u8 TID;
 	u32 tx_pktcount;
-	u32 pktInterval;
 	struct mp_tx tx;
 
 	//Rx Section
-	u32 rx_bssidpktcount;
 	u32 rx_pktcount;
-	u32 rx_pktcount_filter_out;
 	u32 rx_crcerrpktcount;
 	u32 rx_pktloss;
-	BOOLEAN  rx_bindicatePkt;
+
 	struct recv_stat rxstat;
 
 	//RF/BB relative
@@ -405,10 +391,7 @@ struct mp_priv
 
 	u8 bSetTxPower;
 //	uint ForcedDataRate;
-	u8 mp_dm;
-	u8 mac_filter[ETH_ALEN];
-	u8 bmac_filter;
-	
+
 	struct wlan_network mp_network;
 	NDIS_802_11_MAC_ADDRESS network_macaddr;
 
@@ -441,12 +424,8 @@ struct mp_priv
 	u8 *pmp_xmtframe_buf;
 	_queue free_mp_xmitqueue;
 	u32 free_mp_xmitframe_cnt;
-	BOOLEAN bSetRxBssid;
-	BOOLEAN bTxBufCkFail;
-	
-	MPT_CONTEXT MptCtx;
 
-	u8		*TXradomBuffer;
+	MPT_CONTEXT MptCtx;
 };
 
 typedef struct _IOCMD_STRUCT_ {
@@ -465,20 +444,6 @@ struct bb_reg_param {
 	u32 offset;
 	u32 value;
 };
-
-typedef struct _MP_FIRMWARE {
-	FIRMWARE_SOURCE eFWSource;
-#ifdef CONFIG_EMBEDDED_FWIMG
-	u8* 		szFwBuffer;
-#else
-	u8			szFwBuffer[0x8000];
-#endif
-	u32 		ulFwLength;
-} RT_MP_FIRMWARE, *PRT_MP_FIRMWARE;
-
-
-
-
 //=======================================================================
 
 #define LOWER 	_TRUE
@@ -531,7 +496,7 @@ extern u8 mpdatarate[NumRates];
 typedef enum _MPT_RATE_INDEX
 {
 	/* CCK rate. */
-	MPT_RATE_1M =0 ,	/* 0 */
+	MPT_RATE_1M =1 ,	/* 0 */
 	MPT_RATE_2M,
 	MPT_RATE_55M,
 	MPT_RATE_11M,	/* 3 */
@@ -563,63 +528,27 @@ typedef enum _MPT_RATE_INDEX
 	MPT_RATE_MCS13,
 	MPT_RATE_MCS14,
 	MPT_RATE_MCS15,	/* 27 */
-	MPT_RATE_MCS16,
-	MPT_RATE_MCS17, // #29
-	MPT_RATE_MCS18,
-	MPT_RATE_MCS19,
-	MPT_RATE_MCS20,
-	MPT_RATE_MCS21,
-	MPT_RATE_MCS22, // #34
-	MPT_RATE_MCS23,
-	MPT_RATE_MCS24,
-	MPT_RATE_MCS25,
-	MPT_RATE_MCS26,
-	MPT_RATE_MCS27, // #39
-	MPT_RATE_MCS28, // #40
-	MPT_RATE_MCS29, // #41
-	MPT_RATE_MCS30, // #42
-	MPT_RATE_MCS31, // #43
 	/* VHT rate. Total: 20*/
-	MPT_RATE_VHT1SS_MCS0,//  #44
-	MPT_RATE_VHT1SS_MCS1, // #
+	MPT_RATE_VHT1SS_MCS0 = 100,// To reserve MCS16~MCS31, the index starts from #100.
+	MPT_RATE_VHT1SS_MCS1, // #101
 	MPT_RATE_VHT1SS_MCS2,
 	MPT_RATE_VHT1SS_MCS3,
 	MPT_RATE_VHT1SS_MCS4,
 	MPT_RATE_VHT1SS_MCS5,
-	MPT_RATE_VHT1SS_MCS6, // #
+	MPT_RATE_VHT1SS_MCS6, // #106
 	MPT_RATE_VHT1SS_MCS7,
 	MPT_RATE_VHT1SS_MCS8,
-	MPT_RATE_VHT1SS_MCS9, //#53
-	MPT_RATE_VHT2SS_MCS0, //#54
-	MPT_RATE_VHT2SS_MCS1, 
+	MPT_RATE_VHT1SS_MCS9,
+	MPT_RATE_VHT2SS_MCS0,
+	MPT_RATE_VHT2SS_MCS1, // #111
 	MPT_RATE_VHT2SS_MCS2,
 	MPT_RATE_VHT2SS_MCS3,
 	MPT_RATE_VHT2SS_MCS4,
 	MPT_RATE_VHT2SS_MCS5,
-	MPT_RATE_VHT2SS_MCS6,
+	MPT_RATE_VHT2SS_MCS6, // #116
 	MPT_RATE_VHT2SS_MCS7,
 	MPT_RATE_VHT2SS_MCS8,
-	MPT_RATE_VHT2SS_MCS9, //#63
-	MPT_RATE_VHT3SS_MCS0,
-	MPT_RATE_VHT3SS_MCS1, 
-	MPT_RATE_VHT3SS_MCS2,
-	MPT_RATE_VHT3SS_MCS3,
-	MPT_RATE_VHT3SS_MCS4,
-	MPT_RATE_VHT3SS_MCS5,
-	MPT_RATE_VHT3SS_MCS6, // #126
-	MPT_RATE_VHT3SS_MCS7,
-	MPT_RATE_VHT3SS_MCS8,
-	MPT_RATE_VHT3SS_MCS9,
-	MPT_RATE_VHT4SS_MCS0,
-	MPT_RATE_VHT4SS_MCS1, // #131
-	MPT_RATE_VHT4SS_MCS2,
-	MPT_RATE_VHT4SS_MCS3,
-	MPT_RATE_VHT4SS_MCS4,
-	MPT_RATE_VHT4SS_MCS5,
-	MPT_RATE_VHT4SS_MCS6, // #136
-	MPT_RATE_VHT4SS_MCS7,
-	MPT_RATE_VHT4SS_MCS8,
-	MPT_RATE_VHT4SS_MCS9,
+	MPT_RATE_VHT2SS_MCS9,
 	MPT_RATE_LAST
 }MPT_RATE_E, *PMPT_RATE_E;
 
@@ -679,17 +608,6 @@ typedef enum _RXPHY_BITMASK_
 } RXPHY_BITMASK;
 #endif
 
-#define Mac_OFDM_OK 			0x00000000
-#define Mac_OFDM_Fail			0x10000000
-#define Mac_OFDM_FasleAlarm 	0x20000000
-#define Mac_CCK_OK				0x30000000
-#define Mac_CCK_Fail			0x40000000
-#define Mac_CCK_FasleAlarm		0x50000000
-#define Mac_HT_OK				0x60000000
-#define Mac_HT_Fail 			0x70000000
-#define Mac_HT_FasleAlarm		0x90000000
-#define Mac_DropPacket			0xA0000000
-
 typedef enum _ENCRY_CTRL_STATE_ {
 	HW_CONTROL,		//hw encryption& decryption
 	SW_CONTROL,		//sw encryption& decryption
@@ -697,30 +615,6 @@ typedef enum _ENCRY_CTRL_STATE_ {
 	SW_ENCRY_HW_DECRY	//sw encryption & hw decryption
 }ENCRY_CTRL_STATE;
 
-typedef enum	_MPT_TXPWR_DEF{
-	MPT_CCK,
-	MPT_OFDM, // L and HT OFDM
-	MPT_VHT_OFDM
-}MPT_TXPWR_DEF;
-
-#ifdef CONFIG_RF_GAIN_OFFSET
-
-#if defined(CONFIG_RTL8723A)
-	#define 	REG_RF_BB_GAIN_OFFSET_CCK	0x0d
-	#define 	REG_RF_BB_GAIN_OFFSET_OFDM	0x0e
-	#define 	RF_GAIN_OFFSET_MASK 	0xfffff
-#elif defined(CONFIG_RTL8723B)
-	#define 	REG_RF_BB_GAIN_OFFSET	0x7f
-	#define 	RF_GAIN_OFFSET_MASK 	0xfffff
-#elif defined(CONFIG_RTL8188E)
-	#define 	REG_RF_BB_GAIN_OFFSET	0x55
-	#define 	RF_GAIN_OFFSET_MASK 	0xfffff
-#else
-	#define 	REG_RF_BB_GAIN_OFFSET	0x55
-	#define 	RF_GAIN_OFFSET_MASK 	0xfffff
-#endif	//CONFIG_RTL8723A
-
-#endif //CONFIG_RF_GAIN_OFFSET
 
 //=======================================================================
 //extern struct mp_xmit_frame *alloc_mp_xmitframe(struct mp_priv *pmp_priv);
@@ -776,7 +670,7 @@ extern void	SetSingleToneTx(PADAPTER pAdapter, u8 bStart);
 extern void	SetCarrierSuppressionTx(PADAPTER pAdapter, u8 bStart);
 extern void PhySetTxPowerLevel(PADAPTER pAdapter);
 
-extern void	fill_txdesc_for_mp(PADAPTER padapter, u8 *ptxdesc);
+extern void	fill_txdesc_for_mp(PADAPTER padapter, struct tx_desc *ptxdesc);
 extern void	SetPacketTx(PADAPTER padapter);
 extern void	SetPacketRx(PADAPTER pAdapter, u8 bStartRx);
 
@@ -817,12 +711,9 @@ extern u8 Hal_ReadRFThermalMeter(PADAPTER pAdapter);
 extern void Hal_SetCCKContinuousTx(PADAPTER pAdapter, u8 bStart);
 extern void Hal_SetOFDMContinuousTx(PADAPTER pAdapter, u8 bStart);
 extern void Hal_ProSetCrystalCap (PADAPTER pAdapter , u32 CrystalCapVal);
-//extern void _rtw_mp_xmit_priv(struct xmit_priv *pxmitpriv);
+extern void _rtw_mp_xmit_priv(struct xmit_priv *pxmitpriv);
 extern void MP_PHY_SetRFPathSwitch(PADAPTER pAdapter ,BOOLEAN bMain);
 extern ULONG mpt_ProQueryCalTxPower(PADAPTER	pAdapter,u8 RfPath);
-extern void MPT_PwrCtlDM(PADAPTER padapter, u32 bstart);
-extern u8 MptToMgntRate(u32	MptRateIdx);
-extern u8 rtw_mpRateParseFunc(PADAPTER pAdapter, u8 *targetStr);
 
 #endif //_RTW_MP_H_
 

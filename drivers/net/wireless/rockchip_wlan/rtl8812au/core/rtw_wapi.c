@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 #ifdef CONFIG_WAPI_SUPPORT
 
 #include <linux/unistd.h>
@@ -391,7 +390,7 @@ u8 rtw_wapi_is_wai_packet(_adapter* padapter,u8 *pkt_data)
 	//YJ,add,091103. Data frame may also have skb->data[30]=0x88 and skb->data[31]=0xb4.
 	if ((pkt_data[1]&0x40) !=0)
 	{
-		//DBG_871X("data is privacy \n");
+		DBG_871X("data is privacy \n");
 	    	return 0;
 	}
 	

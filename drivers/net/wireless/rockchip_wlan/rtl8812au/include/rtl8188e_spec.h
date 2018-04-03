@@ -47,10 +47,6 @@
 #define REG_HISR_88E					0x00B4 //RTL8188E
 #define REG_HIMRE_88E					0x00B8 //RTL8188E
 #define REG_HISRE_88E					0x00BC //RTL8188E
-#define REG_MACID_NO_LINK_0			0x0484
-#define REG_MACID_NO_LINK_1			0x0488
-#define REG_MACID_PAUSE_0			0x048c
-#define REG_MACID_PAUSE_1			0x0490
 
 //-----------------------------------------------------
 //
@@ -85,10 +81,6 @@
 //	0x0400h ~ 0x047Fh	Protocol Configuration
 //
 //-----------------------------------------------------
-#ifdef CONFIG_WOWLAN
-#define REG_TXPKTBUF_IV_LOW             0x01a4
-#define REG_TXPKTBUF_IV_HIGH            0x01a8
-#endif
 
 //-----------------------------------------------------
 //
@@ -101,11 +93,6 @@
 //	0x0600h ~ 0x07FFh	WMAC Configuration
 //
 //-----------------------------------------------------
-#ifdef CONFIG_RF_GAIN_OFFSET
-#define EEPROM_RF_GAIN_OFFSET			0xC1
-#define EEPROM_RF_GAIN_VAL				0xF6
-#define EEPROM_THERMAL_OFFSET			0xF5
-#endif //CONFIG_RF_GAIN_OFFSET
 //----------------------------------------------------------------------------
 //       88E Driver Initialization Offload REG_FDHM0(Offset 0x88, 8 bits)  
 //----------------------------------------------------------------------------
@@ -134,12 +121,13 @@
 #define IMR_TX_MASK			(IMR_VODOK_88E|IMR_VIDOK_88E|IMR_BEDOK_88E|IMR_BKDOK_88E|IMR_MGNTDOK_88E|IMR_HIGHDOK_88E|IMR_BCNDERR0_88E)
 
 #ifdef CONFIG_CONCURRENT_MODE
-#define RT_BCN_INT_MASKS	(IMR_BCNDMAINT0_88E | IMR_TBDOK_88E | IMR_TBDER_88E | IMR_BCNDMAINT_E_88E)
+#define RT_IBSS_INT_MASKS	(IMR_BCNDMAINT0_88E | IMR_TBDOK_88E | IMR_TBDER_88E | IMR_BCNDMAINT_E_88E)
 #else
-#define RT_BCN_INT_MASKS	(IMR_BCNDMAINT0_88E | IMR_TBDOK_88E | IMR_TBDER_88E)
+#define RT_IBSS_INT_MASKS	(IMR_BCNDMAINT0_88E | IMR_TBDOK_88E | IMR_TBDER_88E)
 #endif
 
 #define RT_AC_INT_MASKS	(IMR_VIDOK_88E | IMR_VODOK_88E | IMR_BEDOK_88E|IMR_BKDOK_88E)
+#define RT_BSS_INT_MASKS	(RT_IBSS_INT_MASKS)
 #endif
 
 
@@ -147,8 +135,6 @@
 // General definitions
 //========================================================
 
-#define MACID_NUM_88E 64
-#define CAM_ENTRY_NUM_88E 32
 
 //----------------------------------------------------------------------------
 //       8192C EEPROM/EFUSE share register definition.
@@ -157,5 +143,5 @@
 #define EFUSE_ACCESS_ON			0x69	// For RTL8723 only.
 #define EFUSE_ACCESS_OFF			0x00	// For RTL8723 only.
 
-#endif /* __RTL8188E_SPEC_H__ */
+#endif //__RTL8188E_SPEC_H__
 

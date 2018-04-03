@@ -97,8 +97,9 @@
 #define IMR_RX_MASK		(IMR_ROK|IMR_RDU|IMR_RXFOVW)
 #define IMR_TX_MASK		(IMR_VODOK|IMR_VIDOK|IMR_BEDOK|IMR_BKDOK|IMR_MGNTDOK|IMR_HIGHDOK|IMR_BDOK)
 
-#define RT_BCN_INT_MASKS				(IMR_BcnInt | IMR_TBDOK | IMR_TBDER)
+#define RT_IBSS_INT_MASKS				(IMR_BcnInt | IMR_TBDOK | IMR_TBDER)
 #define RT_AC_INT_MASKS				(IMR_VIDOK | IMR_VODOK | IMR_BEDOK|IMR_BKDOK)
+#define RT_BSS_INT_MASKS				(RT_IBSS_INT_MASKS)
 #endif
 
 //----------------------------------------------------------------------------
@@ -109,7 +110,25 @@
 //
 // Interface type.
 //
+#endif 
+
+#ifdef CONFIG_USB_HCI
+
+//should be renamed and moved to another file
+typedef	enum _BOARD_TYPE_8192CUSB{
+	BOARD_USB_DONGLE 			= 0,		// USB dongle
+	BOARD_USB_High_PA 		= 1,		// USB dongle with high power PA
+	BOARD_MINICARD		  	= 2,		// Minicard
+	BOARD_USB_SOLO 		 	= 3,		// USB solo-Slim module
+	BOARD_USB_COMBO			= 4,		// USB Combo-Slim module
+} BOARD_TYPE_8192CUSB, *PBOARD_TYPE_8192CUSB;
+
+#define	SUPPORT_HW_RADIO_DETECT(pHalData)	(pHalData->BoardType == BOARD_MINICARD||\
+													pHalData->BoardType == BOARD_USB_SOLO||\
+													pHalData->BoardType == BOARD_USB_COMBO)
+
 #endif
+
 
 #define EFUSE_ACCESS_ON			0x69	// For RTL8723 only.
 #define EFUSE_ACCESS_OFF			0x00	// For RTL8723 only.
@@ -118,10 +137,8 @@
 // General definitions
 //========================================================
 
-#define MACID_NUM_92C 32
-#define CAM_ENTRY_NUM_92C 32
 
 #include "basic_types.h"
 
-#endif /* __RTL8192C_SPEC_H__ */
+#endif
 

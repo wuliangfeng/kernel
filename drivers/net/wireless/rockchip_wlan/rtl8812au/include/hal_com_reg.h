@@ -104,11 +104,6 @@
 #define REG_GPIO_OUTSTS				0x00F4	// For RTL8723 only.
 #define REG_TYPE_ID						0x00FC
 
-//
-// 2010/12/29 MH Add for 92D
-//
-#define REG_MAC_PHY_CTRL_NORMAL		0x00f8
-
 
 //-----------------------------------------------------
 //
@@ -170,7 +165,6 @@
 #define REG_TXDMA_OFFSET_CHK			0x020C
 #define REG_TXDMA_STATUS				0x0210
 #define REG_RQPN_NPQ					0x0214
-#define REG_AUTO_LLT					0x0224
 
 
 //-----------------------------------------------------
@@ -226,22 +220,13 @@
 //	0x0400h ~ 0x047Fh	Protocol Configuration
 //
 //-----------------------------------------------------
-
-/* 92C, 92D */
-#define REG_VOQ_INFO	0x0400
-#define REG_VIQ_INFO	0x0404
-#define REG_BEQ_INFO	0x0408
-#define REG_BKQ_INFO	0x040C
-
-/* 88E, 8723A, 8812A, 8821A, 92E, 8723B */
-#define REG_Q0_INFO	0x400
-#define REG_Q1_INFO	0x404
-#define REG_Q2_INFO	0x408
-#define REG_Q3_INFO	0x40C
-
-#define REG_MGQ_INFO	0x0410
-#define REG_HGQ_INFO	0x0414
-#define REG_BCNQ_INFO	0x0418
+#define REG_VOQ_INFORMATION			0x0400
+#define REG_VIQ_INFORMATION			0x0404
+#define REG_BEQ_INFORMATION			0x0408
+#define REG_BKQ_INFORMATION			0x040C
+#define REG_MGQ_INFORMATION			0x0410
+#define REG_HGQ_INFORMATION			0x0414
+#define REG_BCNQ_INFORMATION			0x0418
 #define REG_TXPKT_EMPTY				0x041A
 #define REG_CPU_MGQ_INFORMATION		0x041C
 #define REG_FWHW_TXQ_CTRL				0x0420
@@ -267,18 +252,8 @@
 #define REG_FAST_EDCA_CTRL				0x0460
 #define REG_RD_RESP_PKT_TH				0x0463
 
-/* 8723A, 8812A, 8821A, 92E, 8723B */
-#define REG_Q4_INFO	0x468
-#define REG_Q5_INFO	0x46C
-#define REG_Q6_INFO	0x470
-#define REG_Q7_INFO	0x474
-
 #define REG_INIRTS_RATE_SEL				0x0480
 #define REG_INIDATA_RATE_SEL			0x0484
-
-/* 8723B, 92E, 8812A, 8821A*/
-#define REG_MACID_SLEEP_3				0x0484
-#define REG_MACID_SLEEP_1				0x0488
 
 #define REG_POWER_STAGE1				0x04B4
 #define REG_POWER_STAGE2				0x04B8
@@ -286,25 +261,12 @@
 #define REG_PKT_BE_BK_LIFE_TIME		0x04C2
 #define REG_STBC_SETTING				0x04C4
 #define REG_QUEUE_CTRL					0x04C6
-#define REG_SINGLE_AMPDU_CTRL			0x04c7
 #define REG_PROT_MODE_CTRL			0x04C8
 #define REG_MAX_AGGR_NUM				0x04CA
 #define REG_RTS_MAX_AGGR_NUM			0x04CB
 #define REG_BAR_MODE_CTRL				0x04CC
 #define REG_RA_TRY_RATE_AGG_LMT		0x04CF
-
-/* 8723A */
-#define REG_MACID_DROP	0x04D0
-
-/* 88E */
-#define REG_EARLY_MODE_CONTROL	0x04D0
-
-/* 8723B, 92E, 8812A, 8821A */
-#define REG_MACID_SLEEP_2	0x04D0
-
-/* 8723A, 8723B, 92E, 8812A, 8821A */
-#define REG_MACID_SLEEP	0x04D4
-
+#define REG_EARLY_MODE_CONTROL		0x04D0
 #define REG_NQOS_SEQ					0x04DC
 #define REG_QOS_SEQ					0x04DE
 #define REG_NEED_CPU_HANDLE			0x04E0
@@ -404,7 +366,6 @@
 #define REG_MAR							0x0620
 #define REG_MBIDCAMCFG					0x0628
 
-#define REG_PNO_STATUS					0x0631
 #define REG_USTIME_EDCA				0x0638
 #define REG_MAC_SPEC_SIFS				0x063A
 // 20100719 Joseph: Hardware register definition change. (HW datasheet v54)
@@ -669,9 +630,6 @@ Default: 00b.
 #define RRSR_MCS6				BIT18
 #define RRSR_MCS7				BIT19
 
-#define RRSR_CCK_RATES (RRSR_11M|RRSR_5_5M|RRSR_2M|RRSR_1M)
-#define RRSR_OFDM_RATES (RRSR_54M|RRSR_48M|RRSR_36M|RRSR_24M|RRSR_18M|RRSR_12M|RRSR_9M|RRSR_6M)
-
 // WOL bit information
 #define HAL92C_WOL_PTK_UPDATE_EVENT		BIT0
 #define HAL92C_WOL_GTK_UPDATE_EVENT		BIT1
@@ -795,6 +753,10 @@ Default: 00b.
 #define CAM_WRITE				BIT16
 #define CAM_READ				0x00000000
 #define CAM_POLLINIG			BIT31
+
+#define SCR_UseDK				0x01
+#define SCR_TxSecEnable			0x02
+#define SCR_RxSecEnable			0x04
 
 //
 // 10. Power Save Control Registers	 
@@ -1129,7 +1091,7 @@ Current IOREG MAP
 #define FEN_CPUEN				BIT(10)
 #define FEN_DCORE				BIT(11)
 #define FEN_ELDR				BIT(12)
-#define FEN_EN_25_1				BIT(13)
+//#define FEN_DIO_RF				BIT(13)
 #define FEN_HWPDN				BIT(14)
 #define FEN_MREGEN				BIT(15)
 
@@ -1386,19 +1348,6 @@ Current IOREG MAP
 //2 TXDMA_OFFSET_CHK
 #define DROP_DATA_EN				BIT(9)
 
-//2 AUTO_LLT
-#define BIT_SHIFT_TXPKTNUM 24
-#define BIT_MASK_TXPKTNUM 0xff
-#define BIT_TXPKTNUM(x) (((x) & BIT_MASK_TXPKTNUM) << BIT_SHIFT_TXPKTNUM)
-
-#define BIT_TDE_DBG_SEL BIT(23)
-#define BIT_AUTO_INIT_LLT BIT(16)
-
-#define BIT_SHIFT_Tx_OQT_free_space 8
-#define BIT_MASK_Tx_OQT_free_space 0xff
-#define BIT_Tx_OQT_free_space(x) (((x) & BIT_MASK_Tx_OQT_free_space) << BIT_SHIFT_Tx_OQT_free_space)
-
-
 //-----------------------------------------------------
 //
 //	0x0280h ~ 0x028Bh	RX DMA Configuration
@@ -1544,11 +1493,10 @@ Current IOREG MAP
 #define SCR_NoSKMC				BIT(5)			//No Key Search Multicast
 #define SCR_TXBCUSEDK			BIT(6)			// Force Tx Broadcast packets Use Default Key
 #define SCR_RXBCUSEDK			BIT(7)			// Force Rx Broadcast packets Use Default Key
-#define SCR_CHK_KEYID			BIT(8)
 
 //-----------------------------------------------------
 //
-//	SDIO Bus Specification
+//	0xFE00h ~ 0xFE55h	RTL8723 SDIO Configuration
 //
 //-----------------------------------------------------
 
@@ -1559,7 +1507,6 @@ Current IOREG MAP
 #define TX_HIQ_BASE				0x10310000
 #define TX_MIQ_BASE				0x10320000
 #define TX_LOQ_BASE				0x10330000
-#define TX_EPQ_BASE				0x10350000
 #define RX_RX0FF_BASE			0x10340000
 
 //SDIO host local register space mapping.
@@ -1573,7 +1520,6 @@ Current IOREG MAP
 #define WLAN_TX_HIQ_DEVICE_ID			4	// 0b[16], 100b[15:13]
 #define WLAN_TX_MIQ_DEVICE_ID 		5	// 0b[16], 101b[15:13]
 #define WLAN_TX_LOQ_DEVICE_ID 		6	// 0b[16], 110b[15:13]
-#define WLAN_TX_EXQ_DEVICE_ID		3	// 0b[16], 011b[15:13]
 #define WLAN_RX0FF_DEVICE_ID 			7	// 0b[16], 111b[15:13]
 #define WLAN_IOREG_DEVICE_ID 			8	// 1b[16]
 
@@ -1591,11 +1537,9 @@ Current IOREG MAP
 #define SDIO_REG_HISR				0x0018 // SDIO Host Interrupt Service Routine
 #define SDIO_REG_HCPWM			0x0019 // HCI Current Power Mode
 #define SDIO_REG_RX0_REQ_LEN		0x001C // RXDMA Request Length
-#define SDIO_REG_OQT_FREE_PG		0x001E // OQT Free Page
 #define SDIO_REG_FREE_TXPG			0x0020 // Free Tx Buffer Page
 #define SDIO_REG_HCPWM1			0x0024 // HCI Current Power Mode 1
 #define SDIO_REG_HCPWM2			0x0026 // HCI Current Power Mode 2
-#define SDIO_REG_FREE_TXPG_SEQ	0x0028 // Free Tx Page Sequence
 #define SDIO_REG_HTSFR_INFO		0x0030 // HTSF Informaion
 #define SDIO_REG_HRPWM1			0x0080 // HCI Request Power Mode 1
 #define SDIO_REG_HRPWM2			0x0082 // HCI Request Power Mode 2
@@ -1747,24 +1691,17 @@ Current IOREG MAP
 // General definitions
 //========================================================
 
-#define LAST_ENTRY_OF_TX_PKT_BUFFER_8188E(__Adapter)	   ( IS_VENDOR_8188E_I_CUT_SERIES(__Adapter) ? 255 : 175 )
+#define LAST_ENTRY_OF_TX_PKT_BUFFER_8188E		176
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8812			255
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8723B		255
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_8192C		255
 #define LAST_ENTRY_OF_TX_PKT_BUFFER_DUAL_MAC	127
 
 #define POLLING_LLT_THRESHOLD				20
-#if defined(CONFIG_RTL8723B) && defined(CONFIG_PCI_HCI)
-#define POLLING_READY_TIMEOUT_COUNT		6000
-#else
 #define POLLING_READY_TIMEOUT_COUNT		1000
-#endif
-
 
 // GPIO BIT
-#define	HAL_8192C_HW_GPIO_WPS_BIT	BIT2
-#define	HAL_8192EU_HW_GPIO_WPS_BIT	BIT7
-#define	HAL_8188E_HW_GPIO_WPS_BIT	BIT7
+#define HAL_8192C_HW_GPIO_WPS_BIT	BIT2
 
 #endif //__HAL_COMMON_H__
 

@@ -20,6 +20,10 @@
 //***** temporarily flag *******
 #define CONFIG_SINGLE_IMG
 //#define CONFIG_DISABLE_ODM
+#define CONFIG_ODM_REFRESH_RAMASK
+#define CONFIG_PHY_SETTING_WITH_ODM
+//for FPGA VERIFICATION config
+#define RTL8188E_FPGA_TRUE_PHY_VERIFICATION 0
 
 //***** temporarily flag *******
 /*
@@ -36,10 +40,16 @@
 #define PLATFORM_LINUX	1
 
 
-#define CONFIG_IOCTL_CFG80211 1
+//#define CONFIG_IOCTL_CFG80211 1
+
+#ifdef CONFIG_PLATFORM_ARM_SUNxI
+	#ifndef CONFIG_IOCTL_CFG80211 
+		#define CONFIG_IOCTL_CFG80211 1
+	#endif
+#endif
 
 #ifdef CONFIG_IOCTL_CFG80211
-	#define RTW_USE_CFG80211_STA_EVENT /* Indecate new sta asoc through cfg80211_new_sta */
+	//#define RTW_USE_CFG80211_STA_EVENT /* Indecate new sta asoc through cfg80211_new_sta */
 	#define CONFIG_CFG80211_FORCE_COMPATIBLE_2_6_37_UNDER
 	//#define CONFIG_DEBUG_CFG80211 
 	//#define CONFIG_DRV_ISSUE_PROV_REQ // IOT FOR S2
@@ -49,21 +59,17 @@
 /*
  * Internal  General Config
  */
+//#define CONFIG_PWRCTRL
 //#define CONFIG_H2CLBK
 
 #define CONFIG_EMBEDDED_FWIMG	1
 //#define CONFIG_FILE_FWIMG
 
-#define CONFIG_XMIT_ACK
-#ifdef CONFIG_XMIT_ACK
-	#define CONFIG_ACTIVE_KEEP_ALIVE_CHECK
-#endif
 
 #define CONFIG_80211N_HT	1
 
 #ifdef CONFIG_80211N_HT
 	#define CONFIG_80211AC_VHT 1
-	#define CONFIG_BEAMFORMING
 #endif
 
 #define CONFIG_RECV_REORDERING_CTRL	1
@@ -82,8 +88,7 @@
 //#ifndef CONFIG_MP_INCLUDED
 	#define CONFIG_IPS	1
 	#ifdef CONFIG_IPS
-	//#define CONFIG_IPS_LEVEL_2	1 //enable this to set default IPS mode to IPS_LEVEL_2	
-	#define CONFIG_IPS_CHECK_IN_WD // Do IPS Check in WatchDog.	
+	//#define CONFIG_IPS_LEVEL_2	1 //enable this to set default IPS mode to IPS_LEVEL_2
 	#endif
 	//#define SUPPORT_HW_RFOFF_DETECTED	1
 
@@ -105,15 +110,13 @@
 	#endif
 
 
-	#define CONFIG_CONCURRENT_MODE 1
+	//#define CONFIG_CONCURRENT_MODE 1
 	#ifdef CONFIG_CONCURRENT_MODE
 		//#define CONFIG_HWPORT_SWAP				//Port0->Sec , Port1 -> Pri
-		#define CONFIG_RUNTIME_PORT_SWITCH
-		//#define DBG_RUNTIME_PORT_SWITCH
-		#define CONFIG_STA_MODE_SCAN_UNDER_AP_MODE
-		//#ifdef CONFIG_RTL8812A
-		//	#define CONFIG_TSF_RESET_OFFLOAD 1		// For 2 PORT TSF SYNC.
-		//#endif
+		#ifdef CONFIG_RTL8812A
+			#define CONFIG_TSF_RESET_OFFLOAD 1		// For 2 PORT TSF SYNC.
+		#endif
+		//#define CONFIG_MULTI_VIR_IFACES //besides primary&secondary interfaces, extend to support more interfaces
 	#endif
 
 	//#define CONFIG_IOL
@@ -138,6 +141,9 @@
 	#endif			
 	#define CONFIG_FIND_BEST_CHANNEL	1
 	//#define CONFIG_NO_WIRELESS_HANDLERS	1
+
+	//#define	CONFIG_AUTO_AP_MODE
+
 #endif
 
 #define CONFIG_P2P	1
@@ -151,10 +157,7 @@
 	//#define CONFIG_DBG_P2P
 
 	#define CONFIG_P2P_PS
-	#define CONFIG_P2P_IPS
-	#define CONFIG_P2P_OP_CHK_SOCIAL_CH
-	#define CONFIG_CFG80211_ONECHANNEL_UNDER_CONCURRENT  //replace CONFIG_P2P_CHK_INVITE_CH_LIST flag
-	#define CONFIG_P2P_INVITE_IOT
+	//#define CONFIG_P2P_IPS
 #endif
 
 //	Added by Kurt 20110511
@@ -196,11 +199,12 @@
 #define CONFIG_LONG_DELAY_ISSUE
 #define CONFIG_NEW_SIGNAL_STAT_PROCESS
 //#define CONFIG_SIGNAL_DISPLAY_DBM //display RX signal with dbm
-#ifdef CONFIG_SIGNAL_DISPLAY_DBM
-//#define CONFIG_BACKGROUND_NOISE_MONITOR
-#endif
 #define RTW_NOTCH_FILTER 0 /* 0:Disable, 1:Enable, */
-#define CONFIG_DEAUTH_BEFORE_CONNECT
+
+#define CONFIG_BR_EXT	1	// Enable NAT2.5 support for STA mode interface with a L2 Bridge
+#ifdef CONFIG_BR_EXT
+#define CONFIG_BR_EXT_BRNAME	"br0"
+#endif	// CONFIG_BR_EXT
 
 #define CONFIG_TX_MCAST2UNI	1	// Support IP multicast->unicast
 //#define CONFIG_CHECK_AC_LIFETIME 1	// Check packet lifetime of 4 ACs.
@@ -224,18 +228,17 @@
  */
 //#define CONFIG_USE_USB_BUFFER_ALLOC_TX 1	// Trade-off: For TX path, improve stability on some platforms, but may cause performance degrade on other platforms.
 //#define CONFIG_USE_USB_BUFFER_ALLOC_RX 1	// For RX path
-#ifdef CONFIG_USE_USB_BUFFER_ALLOC_RX
-#undef CONFIG_PREALLOC_RECV_SKB
-#else
-	#ifdef CONFIG_PREALLOC_RECV_SKB
-//		#define CONFIG_FIX_NR_BULKIN_BUFFER		// only use USB prealloc_recv_buffer, no use alloc_skb()
+
+#ifdef CONFIG_PLATFORM_ARM_SUNxI
+	#ifndef 	CONFIG_USE_USB_BUFFER_ALLOC_TX 
+		#define CONFIG_USE_USB_BUFFER_ALLOC_TX
 	#endif
 #endif
 
-#ifdef CONFIG_WOWLAN
-// 1 spatial stream for lower power mode when entering suspend
-	//#define CONFIG_LOWPR_1SS 
+#ifdef CONFIG_USE_USB_BUFFER_ALLOC_RX
+#undef CONFIG_PREALLOC_RECV_SKB
 #endif
+
 
 /* 
  * USB VENDOR REQ BUFFER ALLOCATION METHOD
@@ -249,20 +252,17 @@
 
 //#define CONFIG_USB_SUPPORT_ASYNC_VDN_REQ 1
 
-#define WAKEUP_GPIO_IDX	1	//WIFI Chip Side
 
 /*
  * HAL  Related Config
  */
 #define RTL8812A_RX_PACKET_INCLUDE_CRC	0
 
-#define CONFIG_RX_PACKET_APPEND_FCS
-
 //#define CONFIG_ONLY_ONE_OUT_EP_TO_LOW	0
 
 #define CONFIG_OUT_EP_WIFI_MODE	0
 
-#define ENABLE_USB_DROP_INCORRECT_OUT
+#define ENABLE_USB_DROP_INCORRECT_OUT	0
 
 #define RTL8192CU_ADHOC_WORKAROUND_SETTING	1
 
@@ -298,6 +298,10 @@
 	
 #endif//CONFIG_PLATFORM_MN10300
 
+#ifdef CONFIG_PLATFORM_TI_DM365
+#define CONFIG_USE_USB_BUFFER_ALLOC_RX 
+#endif
+
 
 #if defined(CONFIG_PLATFORM_ACTIONS_ATM702X)
 	#ifdef CONFIG_USB_TX_AGGREGATION	
@@ -316,7 +320,7 @@
  * Outsource  Related Config
  */
 
-#define TESTCHIP_SUPPORT				0
+#define TEST_CHIP_SUPPORT				0
 
 #define RTL8192CE_SUPPORT 				0
 #define RTL8192CU_SUPPORT 				0
@@ -330,26 +334,36 @@
 #define RTL8723AS_SUPPORT				0
 #define RTL8723AE_SUPPORT				0
 #define RTL8723A_SUPPORT				(RTL8723AU_SUPPORT|RTL8723AS_SUPPORT|RTL8723AE_SUPPORT)
+
 #define RTL8723_FPGA_VERIFICATION		0
 
-#define RTL8188E_SUPPORT				0
+#define RTL8188EE_SUPPORT				0
+#define RTL8188EU_SUPPORT				0
+#define RTL8188ES_SUPPORT				0
+#define RTL8188E_SUPPORT				(RTL8188EE_SUPPORT|RTL8188EU_SUPPORT|RTL8188ES_SUPPORT)
+
+#define RTL8812E_SUPPORT				0
 #ifdef CONFIG_RTL8812A
-#define RTL8812A_SUPPORT				1
+#define RTL8812AU_SUPPORT				1
 #else
-#define RTL8812A_SUPPORT				0
+#define RTL8812AU_SUPPORT				0
 #endif
+#define RTL8812A_SUPPORT				(RTL8812E_SUPPORT|RTL8812AU_SUPPORT)
+
+
 #ifdef CONFIG_RTL8821A
 #define RTL8821A_SUPPORT				1
 #else
 #define RTL8821A_SUPPORT				0
 #endif
-#define RTL8723B_SUPPORT				0
-#define RTL8192E_SUPPORT				0
-#define RTL8814A_SUPPORT				0
-#define 	RTL8195A_SUPPORT				0
 
-#define RATE_ADAPTIVE_SUPPORT 			0
+#define RTL8723B_SUPPORT				0
+
+#define RTL8192E_SUPPORT				0
+
+#define RATE_ADAPTIVE_SUPPORT 		0
 #define POWER_TRAINING_ACTIVE			0
+
 
 #ifdef CONFIG_USB_TX_AGGREGATION
 //#define 	CONFIG_TX_EARLY_MODE
@@ -364,14 +378,14 @@
 /*
  * Debug Related Config
  */
-#define DBG	1
+#define DBG	0
 
 //#define CONFIG_DEBUG /* DBG_871X, etc... */
 //#define CONFIG_DEBUG_RTL871X /* RT_TRACE, RT_PRINT_DATA, _func_enter_, _func_exit_ */
 
-#define CONFIG_PROC_DEBUG
+//#define CONFIG_PROC_DEBUG
 
-#define DBG_CONFIG_ERROR_DETECT
+//#define DBG_CONFIG_ERROR_DETECT
 //#define DBG_CONFIG_ERROR_DETECT_INT
 //#define DBG_CONFIG_ERROR_RESET
 

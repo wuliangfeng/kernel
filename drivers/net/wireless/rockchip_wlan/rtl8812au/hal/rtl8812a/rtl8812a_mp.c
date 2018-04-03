@@ -101,13 +101,13 @@ void Hal_mpt_SwitchRfSetting(PADAPTER pAdapter)
 	ULONG				ulRateIdx = pmp->rateidx;
 	ULONG				ulbandwidth = pmp->bandwidth;
 	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(pAdapter);
-	#if 0
+	
 	// <20120525, Kordan> Dynamic mechanism for APK, asked by Dennis.
 		pmp->MptCtx.backup0x52_RF_A = (u1Byte)PHY_QueryRFReg(pAdapter, RF_PATH_A, RF_0x52, 0x000F0);
 		pmp->MptCtx.backup0x52_RF_B = (u1Byte)PHY_QueryRFReg(pAdapter, RF_PATH_B, RF_0x52, 0x000F0);
 		PHY_SetRFReg(pAdapter, RF_PATH_A, RF_0x52, 0x000F0, 0xD);
 		PHY_SetRFReg(pAdapter, RF_PATH_B, RF_0x52, 0x000F0, 0xD);
-	#endif
+
 	return ;
 }
 /*---------------------------hal\rtl8192c\MPT_Phy.c---------------------------*/
@@ -196,7 +196,7 @@ void Hal_MPT_CCKTxPowerAdjust(PADAPTER Adapter, BOOLEAN bInCH14)
 void Hal_MPT_CCKTxPowerAdjustbyIndex(PADAPTER pAdapter, BOOLEAN beven)
 {
 	s32		TempCCk;
-	u8		CCK_index, CCK_index_old = 0;
+	u8		CCK_index, CCK_index_old;
 	u8		Action = 0;	//0: no action, 1: even->odd, 2:odd->even
 	u8		TimeOut = 100;
 	s32		i = 0;
@@ -261,18 +261,10 @@ void Hal_MPT_CCKTxPowerAdjustbyIndex(PADAPTER pAdapter, BOOLEAN beven)
 			}
 		}
 
-		if (Action == 1) {
-			if (CCK_index_old == 0)
-				CCK_index_old = 1;
+		if (Action == 1)
 			CCK_index = CCK_index_old - 1;
-		} else {
+		else
 			CCK_index = CCK_index_old + 1;
-		}
-
-		if (CCK_index == CCK_TABLE_SIZE) {
-			CCK_index = CCK_TABLE_SIZE -1;
-			RT_TRACE(_module_mp_, _drv_info_, ("CCK_index == CCK_TABLE_SIZE\n"));
-		}
 
 //		RTPRINT(FINIT, INIT_TxPower,("MPT_CCKTxPowerAdjustbyIndex: new CCK_index=0x%x\n",
 //			 CCK_index));
@@ -330,12 +322,21 @@ void Hal_SetChannel(PADAPTER pAdapter)
 	
 	u8		channel = pmp->channel;
 	u8		bandwidth = pmp->bandwidth;
-	
-	pHalData->bSwChnl = _TRUE;
-	//SelectChannel(pAdapter, channel);
-	PHY_SwChnl8812(pAdapter, channel);
-	//PHY_HandleSwChnlAndSetBW8812(pAdapter, _TRUE, _FALSE, channel, bandwidth, 0, 0, channel);	
-	//set_channel_bwmode(pAdapter, pAdapter->mppriv.channel, HAL_PRIME_CHNL_OFFSET_DONT_CARE, pAdapter->mppriv.bandwidth);
+	u8		rate = pmp->rateidx;
+
+
+	// set RF channel register
+	for (eRFPath = 0; eRFPath < pHalData->NumTotalRFPath; eRFPath++)
+	{
+      		if(IS_HARDWARE_TYPE_8192D(pAdapter))
+			_write_rfreg(pAdapter, eRFPath, ODM_CHANNEL, 0xFF, channel);
+		else
+			_write_rfreg(pAdapter, eRFPath, ODM_CHANNEL, 0x3FF, channel);
+	}
+	//Hal_mpt_SwitchRfSetting(pAdapter);
+
+	SelectChannel(pAdapter, channel);
+
 	if (pHalData->CurrentChannel == 14 && !pDM_Odm->RFCalibrateInfo.bCCKinCH14) {
 		pDM_Odm->RFCalibrateInfo.bCCKinCH14 = _TRUE;
 		Hal_MPT_CCKTxPowerAdjust(pAdapter, pDM_Odm->RFCalibrateInfo.bCCKinCH14);
@@ -355,15 +356,10 @@ void Hal_SetChannel(PADAPTER pAdapter)
 void Hal_SetBandwidth(PADAPTER pAdapter)
 {
 	struct mp_priv *pmp = &pAdapter->mppriv;
-	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
 
-	u8		channel = pmp->channel;
-	u8		bandwidth = pmp->bandwidth;
 
-	pHalData->bSetChnlBW=_TRUE;
-
-	PHY_SetSwChnlBWMode8812(pAdapter, channel, bandwidth, 0, 0 );
-	//SetBWMode(pAdapter, pmp->bandwidth, pmp->prime_channel_offset);
+	SetBWMode(pAdapter, pmp->bandwidth, pmp->prime_channel_offset);
+	Hal_mpt_SwitchRfSetting(pAdapter);
 }
 
 void Hal_SetCCKTxPower(PADAPTER pAdapter, u8 *TxPower)
@@ -374,12 +370,12 @@ void Hal_SetCCKTxPower(PADAPTER pAdapter, u8 *TxPower)
 	// rf-A cck tx power
 	write_bbreg(pAdapter, rTxAGC_A_CCK1_Mcs32, bMaskByte1, TxPower[RF_PATH_A]);
 	tmpval = (TxPower[RF_PATH_A]<<16) | (TxPower[RF_PATH_A]<<8) | TxPower[RF_PATH_A];
-	write_bbreg(pAdapter, rTxAGC_B_CCK11_A_CCK2_11, bMaskH3Bytes, tmpval);
+	write_bbreg(pAdapter, rTxAGC_B_CCK11_A_CCK2_11, 0xffffff00, tmpval);
 
 	// rf-B cck tx power
 	write_bbreg(pAdapter, rTxAGC_B_CCK11_A_CCK2_11, bMaskByte0, TxPower[RF_PATH_B]);
 	tmpval = (TxPower[RF_PATH_B]<<16) | (TxPower[RF_PATH_B]<<8) | TxPower[RF_PATH_B];
-	write_bbreg(pAdapter, rTxAGC_B_CCK1_55_Mcs32, bMaskH3Bytes, tmpval);
+	write_bbreg(pAdapter, rTxAGC_B_CCK1_55_Mcs32, 0xffffff00, tmpval);
 
 	RT_TRACE(_module_mp_, _drv_notice_,
 		 ("-SetCCKTxPower: A[0x%02x] B[0x%02x]\n",
@@ -417,6 +413,51 @@ void Hal_SetOFDMTxPower(PADAPTER pAdapter, u8 *TxPower)
 	write_bbreg(pAdapter, rTxAGC_B_Mcs15_Mcs12, bMaskDWord, TxAGC);
 
 }
+
+void Hal_SetAntennaPathPower(PADAPTER pAdapter)
+{
+	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(pAdapter);
+	u8 TxPowerLevel[MAX_RF_PATH];
+	u8 rfPath;
+
+	TxPowerLevel[RF_PATH_A] = pAdapter->mppriv.txpoweridx;
+	TxPowerLevel[RF_PATH_B] = pAdapter->mppriv.txpoweridx_b;
+
+	switch (pAdapter->mppriv.antenna_tx)
+	{
+		case ANTENNA_A:
+		default:
+			rfPath = RF_PATH_A;
+			break;
+		case ANTENNA_B:
+			rfPath = RF_PATH_B;
+			break;
+		case ANTENNA_C:
+			rfPath = RF_PATH_C;
+			break;
+	}
+
+	switch (pHalData->rf_chip)
+	{
+		case RF_8225:
+		case RF_8256:
+		case RF_6052:
+			Hal_SetCCKTxPower(pAdapter, TxPowerLevel);
+			if (pAdapter->mppriv.rateidx < MPT_RATE_6M)	// CCK rate
+				Hal_MPT_CCKTxPowerAdjustbyIndex(pAdapter, TxPowerLevel[rfPath]%2 == 0);
+			Hal_SetOFDMTxPower(pAdapter, TxPowerLevel);
+			break;
+
+		default:
+			break;
+	}
+}
+
+typedef enum	_MPT_TXPWR_DEF{
+	MPT_CCK,
+	MPT_OFDM, // L and HT OFDM
+	MPT_VHT_OFDM
+}MPT_TXPWR_DEF;
 
 void 
 mpt_SetTxPower_8812(
@@ -507,53 +548,6 @@ mpt_SetTxPower_8812(
 			break;
 	}
 
-}
-
-void Hal_SetAntennaPathPower(PADAPTER pAdapter)
-{
-	HAL_DATA_TYPE *pHalData = GET_HAL_DATA(pAdapter);
-	u8 TxPowerLevel[MAX_RF_PATH];
-	u8 rfPath;
-
-	TxPowerLevel[RF_PATH_A] = pAdapter->mppriv.txpoweridx;
-	TxPowerLevel[RF_PATH_B] = pAdapter->mppriv.txpoweridx_b;
-
-	switch (pAdapter->mppriv.antenna_tx)
-	{
-		case ANTENNA_A:
-		default:
-			rfPath = RF_PATH_A;
-			break;
-		case ANTENNA_B:
-			rfPath = RF_PATH_B;
-			break;
-		case ANTENNA_C:
-			rfPath = RF_PATH_C;
-			break;
-	}
-
-	switch (pHalData->rf_chip)
-	{
-		case RF_8225:
-		case RF_8256:
-		case RF_6052:
-
-			if (pAdapter->mppriv.rateidx <= MPT_RATE_11M) {	// CCK rate
-				mpt_SetTxPower_8812(pAdapter,MPT_CCK,TxPowerLevel);
-			}else if (pAdapter->mppriv.rateidx <= MPT_RATE_MCS15) {	// OFDM rate
-				mpt_SetTxPower_8812(pAdapter,MPT_OFDM,TxPowerLevel);
-			} else if ( (pAdapter->mppriv.rateidx >= MPT_RATE_VHT1SS_MCS0) &&
-		 				(pAdapter->mppriv.rateidx <= MPT_RATE_VHT2SS_MCS9)) { //OFDM
-				mpt_SetTxPower_8812(pAdapter,MPT_VHT_OFDM,TxPowerLevel);
-			}else{
-				RT_TRACE(_module_mp_,_drv_err_,("\nERROR: incorrect rateidx=%d\n",pAdapter->mppriv.rateidx));
-			}
-
-			break;
-
-		default:
-			break;
-	}
 }
 
 void Hal_SetTxPower(PADAPTER pAdapter)
@@ -710,7 +704,7 @@ s32 Hal_SetThermalMeter(PADAPTER pAdapter, u8 target_ther)
 
 void Hal_TriggerRFThermalMeter(PADAPTER pAdapter)
 {
-	PHY_SetRFReg(pAdapter, ODM_RF_PATH_A, RF_T_METER_8812A, BIT17 | BIT16, 0x03);
+	_write_rfreg( pAdapter, RF_PATH_A , RF_T_METER_8812A , BIT17 |BIT16 , 0x03 );
 
 //	RT_TRACE(_module_mp_,_drv_alert_, ("TriggerRFThermalMeter() finished.\n" ));
 }
@@ -808,13 +802,13 @@ void Hal_SetSingleToneTx(PADAPTER pAdapter, u8 bStart)
 	{
 		case ANTENNA_A:
 		default:
-			pMptCtx->MptRfPath = rfPath = RF_PATH_A;
+			rfPath = RF_PATH_A;
 			break;
 		case ANTENNA_B:
-			pMptCtx->MptRfPath = rfPath = RF_PATH_B;
+			rfPath = RF_PATH_B;
 			break;
 		case ANTENNA_C:
-			pMptCtx->MptRfPath = rfPath = RF_PATH_C;
+			rfPath = RF_PATH_C;
 			break;
 	}
 
@@ -823,7 +817,7 @@ void Hal_SetSingleToneTx(PADAPTER pAdapter, u8 bStart)
 	{
 		if (IS_HARDWARE_TYPE_JAGUAR(pAdapter)) 
 		{
-			u1Byte p = ODM_RF_PATH_A;
+		u1Byte p = ODM_RF_PATH_A;
 
 			regRF0x0 = PHY_QueryRFReg(pAdapter, ODM_RF_PATH_A, RF_AC_Jaguar, bRFRegOffsetMask);
 			reg0xCB0 = PHY_QueryBBReg(pAdapter, rA_RFE_Pinmux_Jaguar, bMaskDWord);
@@ -1093,23 +1087,15 @@ void Hal_SetContinuousTx(PADAPTER pAdapter, u8 bStart)
 		 ("SetContinuousTx: rate:%d\n", pAdapter->mppriv.rateidx));
 
 	pAdapter->mppriv.MptCtx.bStartContTx = bStart;
-
-	if (pAdapter->mppriv.rateidx <= MPT_RATE_11M) 
-	{  //CCK
+	if (pAdapter->mppriv.rateidx <= MPT_RATE_11M)
+	{
 		Hal_SetCCKContinuousTx(pAdapter, bStart);
 	}
 	else if ((pAdapter->mppriv.rateidx >= MPT_RATE_6M) &&
-			(pAdapter->mppriv.rateidx <= MPT_RATE_MCS15)) 
-	{ //OFDM
+		 (pAdapter->mppriv.rateidx <= MPT_RATE_MCS15))
+	{
 		Hal_SetOFDMContinuousTx(pAdapter, bStart);
-	} else if ((pAdapter->mppriv.rateidx >= MPT_RATE_VHT1SS_MCS0) &&
-			(pAdapter->mppriv.rateidx <= MPT_RATE_VHT2SS_MCS9)) 
-	{ //OFDM
-		Hal_SetOFDMContinuousTx(pAdapter, bStart);
-	} else {
-		RT_TRACE(_module_mp_,_drv_err_,("\nERROR: incorrect rateidx=%d\n",pAdapter->mppriv.rateidx));
 	}
-
 #if 0
 	// ADC turn on [bit24-21] adc port0 ~ port1
 	if (!bStart) {
