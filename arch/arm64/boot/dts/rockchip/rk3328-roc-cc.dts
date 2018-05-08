@@ -160,14 +160,34 @@
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <3300000>;
 	};
-	vcc5v0_host: vcc5v0-host-regulator {
+	vcc_host1_5v: vcc_otg_5v: vcc5v0-host-regulator {
 		compatible = "regulator-fixed";
 		enable-active-high;
 		gpio = <&gpio1 26 GPIO_ACTIVE_HIGH>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&host_vbus_drv>;
-		regulator-name = "vcc5v0_host";
+		regulator-name = "vcc_host1_5v";
 		regulator-always-on;
+	};
+
+	vcc_host_5v: vcc-host-5v-regulator {
+		compatible = "regulator-fixed";
+		enable-active-high;
+		gpio = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&usb30_host_drv>;
+		regulator-name = "vcc_host_5v";
+		regulator-always-on;
+		vin-supply = <&vcc_sys>;
+	};
+
+	vcc_sys: vcc-sys {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_sys";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
 	};
 
 	wireless-wlan {
@@ -627,6 +647,12 @@
 		};
 	};
 
+	usb3 {
+		usb30_host_drv: usb30-host-drv {
+			rockchip,pins = <0 0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
 /*
   sdmmcio-regulator {
     sd_pwr_1800_sel: sd-pwr-1800-sel {
@@ -687,20 +713,21 @@
 };
 
 &u2phy {
-	otg-vbus-gpios = <&gpio0 RK_PD3 GPIO_ACTIVE_HIGH>;
-	status = "okay";
+    status = "okay";
 
-	u2phy_host: host-port {
-		status = "okay";
-	};
+    u2phy_host: host-port {
+        phy-supply = <&vcc_otg_5v>;
+        status = "okay";
+    };
 
-	u2phy_otg: otg-port {
-		status = "okay";
-	};
+    u2phy_otg: otg-port {
+        phy-supply = <&vcc_host1_5v>;
+        status = "okay";
+    };
 };
 
 &u3phy {
-	vbus-drv-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
+    phy-supply = <&vcc_host_5v>;
 	status = "okay";
 };
 
