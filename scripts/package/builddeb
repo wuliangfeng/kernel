@@ -146,12 +146,21 @@ if [ -e $KBUILD_IMAGE ]; then
 	cp $KBUILD_IMAGE "$tmpdir/$installed_image_path"
 else
 	cp arch/$ARCH/boot/$KBUILD_IMAGE "$tmpdir/$installed_image_path"
+    if [[ $# -eq 1 ]]&&[[ -e arch/$ARCH/boot/Image ]]; then
+        cp arch/$ARCH/boot/Image "$tmpdir/boot/"
+    fi
 fi
 
 if grep -q "^CONFIG_OF=y" $KCONFIG_CONFIG ; then
 	# Only some architectures with OF support have this target
 	if grep -q dtbs_install "${srctree}/arch/$SRCARCH/Makefile"; then
-		$MAKE KBUILD_SRC= INSTALL_DTBS_PATH="$tmpdir/usr/lib/$packagename" dtbs_install
+        install_dtb_source=arch/$ARCH/boot/dts/rockchip/${1/%_deb-pkg/.dtb}
+        if [ -f $install_dtb_source ]; then
+            cp -f $install_dtb_source $tmpdir/boot/
+##  $MAKE KBUILD_SRC= INSTALL_DTBS_PATH="$tmpdir/usr/lib/$packagename" distro-debinstall
+        else
+            $MAKE KBUILD_SRC= INSTALL_DTBS_PATH="$tmpdir/usr/lib/$packagename" dtbs_install
+        fi
 	fi
 fi
 
