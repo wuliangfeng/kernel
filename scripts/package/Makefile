@@ -94,7 +94,6 @@ deb-pkg: FORCE
 
 %_deb-pkg: FORCE
 	$(MAKE) clean
-	$(call cmd,src_tar,$(KDEB_SOURCENAME))
 	$(MAKE) KBUILD_SRC=
 	+$(call cmd,builddeb)
 
