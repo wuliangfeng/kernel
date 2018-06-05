@@ -159,6 +159,7 @@
 		regulator-type = "voltage";
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <3300000>;
+		status="disabled";
 	};
 	vcc_host1_5v: vcc_otg_5v: vcc5v0-host-regulator {
 		compatible = "regulator-fixed";
@@ -619,7 +620,8 @@
 
 	vccio1-supply = <&vcc_io>;
 	vccio2-supply = <&vcc_18emmc>;
-	vccio3-supply = <&vccio_sd>;
+	//vccio3-supply = <&vccio_sd>;
+	vccio3-supply = <&vcc_io>;
 	vccio4-supply = <&vdd_18>;
 	vccio5-supply = <&vcc_io>;
 	vccio6-supply = <&vcc_io>;
@@ -689,7 +691,7 @@
 	bus-width = <4>;
 	cap-mmc-highspeed;
 	cap-sd-highspeed;
-	sd-uhs-sdr104;
+	//sd-uhs-sdr104;
 	disable-wp;
 	clock-freq-min-max = <400000 80000000>;
 	clocks = <&cru HCLK_SDMMC>, <&cru SCLK_SDMMC>,
@@ -701,7 +703,7 @@
 	supports-sd;
 	status = "okay";
 	vmmc-supply = <&vcc_sd>;
-	vqmmc-supply = <&vccio_sd>;
+	//vqmmc-supply = <&vccio_sd>;
 };
 
 &spdif {
