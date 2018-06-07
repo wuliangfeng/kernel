@@ -1981,6 +1981,9 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	if (!of_property_read_u32(dsi->dev.of_node, "dsi,lanes", &val))
 		dsi->lanes = val;
 
+	if (!of_property_read_u32(dsi->dev.of_node, "dsi,lvds-force-clk", &val))
+		dsi->lvds_force_clk = val;
+
 	data = of_get_property(dsi->dev.of_node, "panel-init-sequence", &len);
 	if (data) {
 		panel->on_cmds = devm_kzalloc(&dsi->dev,

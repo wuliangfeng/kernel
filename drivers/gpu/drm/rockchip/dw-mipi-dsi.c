@@ -355,6 +355,7 @@ struct dw_mipi_dsi {
 	u32 channel;
 	u32 lanes;
 	u32 format;
+	u32 lvds_force_clk;
 	struct drm_display_mode mode;
 
 	const struct dw_mipi_dsi_plat_data *pdata;
@@ -630,6 +631,11 @@ static unsigned long rockchip_dsi_calc_bandwidth(struct dw_mipi_dsi *dsi)
 			dev_err(dsi->dev, "DPHY clock frequency is out of range\n");
 	}
 
+	if (!!dsi->lvds_force_clk) {
+		target_mbps = dsi->lvds_force_clk;
+		printk("target_mbps = %ld\n", target_mbps);
+	}
+
 	return target_mbps;
 }
 
@@ -717,6 +723,7 @@ static int dw_mipi_dsi_host_attach(struct mipi_dsi_host *host,
 	dsi->channel = device->channel;
 	dsi->format = device->format;
 	dsi->mode_flags = device->mode_flags;
+	dsi->lvds_force_clk = device->lvds_force_clk;
 
 	if (dsi->slave) {
 		dsi->slave->lanes = lanes;
@@ -964,8 +971,8 @@ static void dw_mipi_dsi_set_mode(struct dw_mipi_dsi *dsi,
 		dsi_write(dsi, DSI_PWR_UP, POWERUP);
 	} else {
 		dsi_write(dsi, DSI_PWR_UP, RESET);
-		dsi_write(dsi, DSI_LPCLK_CTRL, PHY_TXREQUESTCLKHS);
 		dsi_write(dsi, DSI_MODE_CFG, ENABLE_VIDEO_MODE);
+		dw_mipi_dsi_video_mode_config(dsi);
 		dsi_write(dsi, DSI_PWR_UP, POWERUP);
 	}
 }
@@ -982,6 +989,8 @@ static void dw_mipi_dsi_init(struct dw_mipi_dsi *dsi)
 	esc_clk_div = DIV_ROUND_UP(dsi->lane_mbps >> 3, 20);
 	dsi_write(dsi, DSI_CLKMGR_CFG, TO_CLK_DIVIDSION(10) |
 		  TX_ESC_CLK_DIVIDSION(esc_clk_div));
+
+	dsi_write(dsi, DSI_LPCLK_CTRL, PHY_TXREQUESTCLKHS);
 }
 
 static void dw_mipi_dsi_dpi_config(struct dw_mipi_dsi *dsi,
