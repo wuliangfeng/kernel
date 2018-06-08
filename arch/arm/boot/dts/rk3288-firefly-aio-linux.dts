@@ -321,18 +321,6 @@
 		};
 	};
 
-	hym8563 {
-		rtc_int: rtc-int {
-			rockchip,pins = <7 4 RK_FUNC_GPIO &pcfg_pull_up>;
-		};
-	};
-
-	sdio-pwrseq {
-		wifi_enable_h: wifi-enable-h {
-			rockchip,pins = <4 28 RK_FUNC_GPIO &pcfg_pull_none>;
-		};
-	};
-
 	vcc-5v {
 		pwr5v_en: pwr5v-en {
 			rockchip,pins = <0 13 RK_FUNC_GPIO &pcfg_output_high>;

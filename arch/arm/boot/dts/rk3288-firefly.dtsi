@@ -42,6 +42,7 @@
 
 #include <dt-bindings/pwm/pwm.h>
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/display/media-bus-format.h>
 #include "rk3288.dtsi"
 
 / {
@@ -574,6 +575,18 @@
 
 		pwr_hold: pwr-hold {
 			rockchip,pins = <0 6 RK_FUNC_GPIO &pcfg_output_high>;
+		};
+	};
+
+	hym8563 {
+		rtc_int: rtc-int {
+			rockchip,pins = <7 4 RK_FUNC_GPIO &pcfg_pull_up>;
+		};
+	};
+
+	sdio-pwrseq {
+		wifi_enable_h: wifi-enable-h {
+			rockchip,pins = <4 28 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
