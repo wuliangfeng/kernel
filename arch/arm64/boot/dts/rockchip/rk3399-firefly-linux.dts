@@ -673,10 +673,12 @@
 		hp-det-adc-value = <500>;
 	};
 	
+	/*
 	afc0: af-controller@0 {
 		compatible = "silicon touch,vm149c-v4l2-i2c-subdev";
 		reg = <0x0c>;
 	};
+	*/
 
 	camera0: camera-module@10 {
 		status = "okay";
@@ -696,7 +698,7 @@
 		rockchip,pwr-snd-gpio = <&gpio1 22 GPIO_ACTIVE_HIGH>;
 		rockchip,rst-gpio = <&gpio0 8 GPIO_ACTIVE_LOW>;
 
-		rockchip,af-ctrl = <&afc0>;
+		//rockchip,af-ctrl = <&afc0>;
 		rockchip,camera-module-mclk-name = "clk_cif_out";
 		rockchip,camera-module-facing = "back";
 		rockchip,camera-module-name = "cmk-cb0695-fv1";
