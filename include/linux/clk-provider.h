@@ -513,8 +513,15 @@ struct clk_fractional_divider {
 	u8		nwidth;
 	u32		nmask;
 	u8		flags;
+	void		(*approximation)(struct clk_hw *hw,
+					 unsigned long rate,
+					 unsigned long *parent_rate,
+					 unsigned long *m,
+					 unsigned long *n);
 	spinlock_t	*lock;
 };
+
+#define to_clk_fd(_hw) container_of(_hw, struct clk_fractional_divider, hw)
 
 extern const struct clk_ops clk_fractional_divider_ops;
 struct clk *clk_register_fractional_divider(struct device *dev,
