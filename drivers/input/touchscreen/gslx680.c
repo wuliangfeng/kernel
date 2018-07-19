@@ -34,8 +34,8 @@
 #include <linux/of_gpio.h>
 #include "tp_suspend.h"
 
-#include "gslx680.h"
 #include <linux/wakelock.h>
+#include "gslx680.h"
 //#define GSL_DEBUG
 //#define GSL_MONITOR
 #define REPORT_DATA_ANDROID_4_0
@@ -51,6 +51,7 @@
 
 int g_wake_pin=0;
 int g_irq_pin=0;
+int global_fw=0;
 
 #define GSL_DATA_REG		0x80
 #define GSL_STATUS_REG		0xe0
@@ -85,6 +86,8 @@ static char dac_counter = 0;
 static char b0_counter = 0;
 static char i2c_lock_flag = 0;
 #endif 
+static char chip_type = 0x36;
+static char is_noid_version = 0;
 
 static struct i2c_client *gsl_client = NULL;
 
@@ -156,15 +159,15 @@ struct gsl_ts {
 	int irq;
 	int irq_pin;
 	int wake_pin;
+	int revert_xy;
+	int revert_x;
+	int revert_y;
 	struct  tp_device  tp;
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
 #endif
   int screen_max_x;
   int screen_max_y;
-  int revert_xy;
-  int revert_x;
-  int revert_y;
 };
 
 #ifdef GSL_DEBUG 
@@ -317,6 +320,34 @@ static int gsl_ts_read(struct i2c_client *client, u8 addr, u8 *pdata, unsigned i
 	return i2c_master_recv(client, pdata, datalen);
 }
 
+static void judge_chip_type(struct i2c_client *client)
+{
+        u8 read_buf[4]  = {0, 0, 0, 0};
+
+        printk("orz chip_type=%x\n", chip_type);
+        msleep(50);
+        gsl_ts_read(client,0xfc, read_buf, sizeof(read_buf));
+
+        if(read_buf[2] != 0x36 && read_buf[2] != 0x88)
+        {
+                msleep(50);
+                gsl_ts_read(client,0xfc, read_buf, sizeof(read_buf));
+        }
+
+        if(0x36 == read_buf[2])
+        {
+                chip_type = 0x36;
+                is_noid_version = 1;
+        }
+        else
+        {
+                chip_type = 0x88;
+                is_noid_version = 0;
+        }
+
+        printk("chip_type=%x, reg=%x\n", chip_type, read_buf[2]);
+}
+
 static __inline__ void fw2buf(u8 *buf, const u32 *fw)
 {
 	u32 *u32_buf = (int *)buf;
@@ -330,12 +361,20 @@ static void gsl_load_fw(struct i2c_client *client)
 	u8 *cur = buf + 1;
 	u32 source_line = 0;
 	u32 source_len;
-	struct fw_data *ptr_fw;
+	const struct fw_data *ptr_fw;
 	
 	printk("=============gsl_load_fw start==============\n");
-
-	ptr_fw = GSLX680_FW;
-	source_len = ARRAY_SIZE(GSLX680_FW);
+	if (global_fw){
+		if(0x36 == chip_type)
+		{
+		printk("--------------3680B-----------------------\n");
+		        ptr_fw = GSL3680B_FW;
+		        source_len = ARRAY_SIZE(GSL3680B_FW);
+		}
+	}else{
+		ptr_fw = GSLX680_FW;
+		source_len = ARRAY_SIZE(GSLX680_FW);
+	}
 
 	for (source_line = 0; source_line < source_len; source_line++) 
 	{
@@ -404,7 +443,10 @@ static void startup_chip(struct i2c_client *client)
 	u8 tmp = 0x00;
 	
 #ifdef GSL_NOID_VERSION
-	gsl_DataInit(gsl_config_data_id);
+	if (global_fw)
+		gsl_DataInit(gsl_config_data_id_3680B);
+	else
+		gsl_DataInit(gsl_config_data_id);
 #endif
 	gsl_ts_write(client, 0xe0, &tmp, 1);
 	msleep(10);	
@@ -623,10 +665,17 @@ ssize_t gsl_config_write_proc(struct file *file, const char *buffer, size_t coun
 	{
 		tmp1=(buf[7]<<24)|(buf[6]<<16)|(buf[5]<<8)|buf[4];
 		tmp=(buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|buf[0];
+	if (global_fw){
+		if(tmp1>=0 && tmp1<ARRAY_SIZE(gsl_config_data_id_3680B))
+		{
+			gsl_config_data_id_3680B[tmp1] = tmp;
+		}
+	}else{
 		if(tmp1>=0 && tmp1<ARRAY_SIZE(gsl_config_data_id))
 		{
 			gsl_config_data_id[tmp1] = tmp;
 		}
+	}
 	}
 #endif
 exit_write_proc_out:
@@ -776,7 +825,7 @@ static void report_key(struct gsl_ts *ts, u16 x, u16 y)
 static void report_data(struct gsl_ts *ts, u16 x, u16 y, u8 pressure, u8 id)
 {
 	if(ts->revert_xy)
-		swap(x, y);
+	swap(x, y);
 
 	print_info("#####id=%d,x=%d,y=%d######\n",id,x,y);
 
@@ -1060,6 +1109,7 @@ static int gslX680_ts_init(struct i2c_client *client, struct gsl_ts *ts)
 		pr_err("%s: Unable to allocate memory\n", __func__);
 		return -ENOMEM;
 	}
+
 	input_device = input_allocate_device();
 	if (!input_device) {
 		rc = -ENOMEM;
@@ -1272,18 +1322,9 @@ static int  gsl_ts_probe(struct i2c_client *client,
 	
 	of_property_read_u32(np,"screen_max_x",&(ts->screen_max_x));
 	of_property_read_u32(np,"screen_max_y",&(ts->screen_max_y));
+
 	print_info("[tp-gsl] screen_max_x =[%d] \n",ts->screen_max_x);
 	print_info("[tp-gsl] screen_max_y =[%d] \n",ts->screen_max_y);
-
-	ret = of_property_read_u32(np,"revert_xy",&(ts->revert_xy));
-	if (ret < 0)
-		ts->revert_xy = 0;
-	ret = of_property_read_u32(np,"revert_x",&(ts->revert_x));
-	if (ret < 0)
-		ts->revert_x = 0;
-	ret = of_property_read_u32(np,"revert_y",&(ts->revert_y));
-	if (ret < 0)
-		ts->revert_y = 0;
 
 	//ts->irq_pin=of_get_named_gpio_flags(np, "irp-gpio", 0, (enum of_gpio_flags *)&irq_flags);
 	//ts->wake_pin=of_get_named_gpio_flags(np, "wake-gpio", 0, &wake_flags);
@@ -1310,6 +1351,17 @@ static int  gsl_ts_probe(struct i2c_client *client,
 	} else {
 		dev_info(&client->dev, "irq pin invalid\n");
 	}
+	if (of_property_read_u32(np, "flip-x", &ts->revert_x) < 0)
+		ts->revert_x = 0;
+
+	if (of_property_read_u32(np, "flip-y", &ts->revert_y) < 0)
+		ts->revert_y = 0;
+
+	if (of_property_read_u32(np, "swap-xy", &ts->revert_xy) < 0)
+		ts->revert_xy = 0;
+
+	if (of_property_read_u32(np, "gsl,fw", &global_fw) < 0)
+		global_fw = 0;
 	
 	rc = gslX680_ts_init(client, ts);
 	if (rc < 0) {
@@ -1323,6 +1375,9 @@ static int  gsl_ts_probe(struct i2c_client *client,
 //	gpio_set_value(ts->irq_pin,1);
 //	msleep(20);    	
 	
+#ifdef GSLX680_COMPATIBLE
+        judge_chip_type(ts->client);
+#endif
 	init_chip(ts->client);
 	check_mem_data(ts->client);
 
@@ -1383,7 +1438,6 @@ static int  gsl_ts_probe(struct i2c_client *client,
 #endif
 
 	gpio_set_value(ts->irq_pin, 0);	
-	enable_irq(ts->irq);
 	printk("[GSLX680] End %s\n", __func__);
 
 	return 0;

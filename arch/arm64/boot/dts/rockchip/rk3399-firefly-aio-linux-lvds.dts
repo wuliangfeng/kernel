@@ -834,16 +834,16 @@
 		vbus-5v-gpios = <&gpio1 3 GPIO_ACTIVE_HIGH>;
 	};
 
-	gsl3680: gsl3680@40 {
-		status = "disabled";
+	gslx680: gslx680@41 {
 		compatible = "gslX680";
-		reg = <0x40>;
-		screen_max_x = <2048>;
-		screen_max_y = <1536>;
-		revert_xy = <1>;
-		revert_x = <1>;
-		revert_y = <0>;
-		touch-gpio = <&gpio4 28 IRQ_TYPE_LEVEL_LOW>;
+		reg = <0x41>;
+		screen_max_x = <800>;
+		screen_max_y = <1280>;
+		flip-x = <1>;
+		flip-y = <0>;
+		swap-xy = <0>;
+		gsl,fw = <1>;
+		touch-gpio = <&gpio4 27 IRQ_TYPE_LEVEL_LOW>;
 		reset-gpio = <&gpio0 12 GPIO_ACTIVE_HIGH>;
 	};
 
