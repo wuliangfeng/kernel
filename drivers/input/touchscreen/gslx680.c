@@ -1438,6 +1438,7 @@ static int  gsl_ts_probe(struct i2c_client *client,
 #endif
 
 	gpio_set_value(ts->irq_pin, 0);	
+	enable_irq(ts->irq);
 	printk("[GSLX680] End %s\n", __func__);
 
 	return 0;
